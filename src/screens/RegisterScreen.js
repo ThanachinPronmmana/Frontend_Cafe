@@ -1,16 +1,60 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState(''); // ช่องสำหรับเบอร์โทร
+  const [phone, setPhone] = useState('');
 
-  const handleRegister = () => {
-    // คุณสามารถเพิ่มฟังก์ชันการสมัครสมาชิกที่นี่
-    // หลังจากสมัครเสร็จจะไปที่หน้า Login หรือ Home
-    navigation.navigate('Login'); // หรือไปที่หน้า Home
+  // ✅ ตรวจสอบว่ามี Token หรือไม่ ถ้ามีให้ไปหน้า Home
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        console.log("Token in AsyncStorage:", token);
+        if (token) {
+          navigation.replace('Home'); // ไปหน้า Home อัตโนมัติ
+        }
+      } catch (error) {
+        console.error("Error fetching token:", error);
+      }
+    };
+    checkLoginStatus();
+  }, []);
+
+  // ✅ ฟังก์ชันสมัครสมาชิก
+  const handleRegister = async () => {
+    if (!email || !password || !name || !phone) {
+      Alert.alert("Error", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
+      return;
+    }
+
+    try {
+      console.log("Registering with:", { email, password, name, phone });
+
+      const response = await axios.post('http://10.0.2.2:8000/api/register', {
+        email,
+        password,
+        name,
+        phone,
+      });
+
+      console.log("API Response:", response.data);
+
+      if (response.status === 200 && response.data.token) {
+        await AsyncStorage.setItem('token', response.data.token);
+        Alert.alert("Success", "สมัครสมาชิกสำเร็จ!");
+        navigation.replace('Login'); // ไปหน้า Home
+      } else {
+        Alert.alert("Register Failed", response.data.message || "No token received");
+      }
+    } catch (error) {
+      console.error("Register Error:", error);
+      Alert.alert("Network Error", error.message);
+    }
   };
 
   return (
@@ -26,7 +70,7 @@ const RegisterScreen = ({ navigation }) => {
 
       <TextInput
         style={styles.input}
-        placeholder="Phone Number "
+        placeholder="Phone Number"
         value={phone}
         onChangeText={setPhone}
       />
@@ -56,7 +100,7 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF0E6',  // สีพื้นหลัง
+    backgroundColor: '#FAF0E6',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -64,7 +108,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#CD853F',  // สีของ title
+    color: '#CD853F',
     marginBottom: 40,
   },
   input: {
@@ -72,14 +116,14 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#CD853F',  // สีของกรอบ input
+    borderColor: '#CD853F',
     borderRadius: 5,
     backgroundColor: '#FFF',
   },
   button: {
     width: '100%',
     padding: 15,
-    backgroundColor: '#CD853F',  // สีของปุ่ม
+    backgroundColor: '#CD853F',
     borderRadius: 5,
     alignItems: 'center',
   },
