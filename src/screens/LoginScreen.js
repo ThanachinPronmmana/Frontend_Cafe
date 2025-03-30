@@ -32,6 +32,7 @@ const LoginScreen = ({ navigation }) => {
       const data = await response.json();
       if (response.ok) {
         await AsyncStorage.setItem('token', data.token);
+        await AsyncStorage.setItem('userId',data.user)
         navigation.replace('Home');
       } else {
         Alert.alert('Login Failed', data.message);

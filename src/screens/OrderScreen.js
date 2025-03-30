@@ -1,93 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, 
-  FlatList, Alert, StyleSheet, ActivityIndicator 
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, FlatList, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_BASE_URL = 'http://10.0.2.2:8000';
 
 const OrderScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState('อาหาร');
-  const [orderedItems, setOrderedItems] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('Food');
   const [menuItems, setMenuItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userId, setUserId] = useState("token"); // ✅ เพิ่ม state เก็บ userId
 
-  // เปลี่ยน URL ตามเซิร์ฟเวอร์ของคุณ
-  const API_BASE_URL = 'http://10.0.2.2:8000'; 
-  const categories = ['อาหาร', 'ของหวาน', 'เครื่องดื่ม'];
+  const categories = ['Desert', 'Food', 'Drinks'];
 
-  // ดึงข้อมูลเมนูอาหารจาก API
+  useEffect(() => {
+    fetchMenuItems(); // ✅ แก้ชื่อฟังก์ชัน
+  }, [selectedCategory]);
+
+  
+
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
       setError(null);
-      const url =  `${API_BASE_URL}/api/food/${selectedCategory}`
-      console.log(url,'hee')
-      const response = await axios.get(url);
-      
-      if (response.data && Array.isArray(response.data)) {
-        setMenuItems(response.data);
-      } else {
-        throw new Error('Invalid data format');
-      }
+      const response = await axios.get(`${API_BASE_URL}/api/food/${selectedCategory}`);
+      setMenuItems(response.data.foods || response.data.data || []);
     } catch (err) {
-      console.error('Fetch error:', err);
-      setError('Failed to load menu items');
-      Alert.alert('Error', 'Could not load menu items. Please try again.');
+      setError("โหลดเมนูไม่สำเร็จ กรุณาลองใหม่!");
+      Alert.alert("Error", "ไม่สามารถโหลดเมนูได้ กรุณาลองใหม่");
     } finally {
       setLoading(false);
     }
   };
 
-  // ดึงข้อมูลเมื่อเลือกหมวดหมู่
-  useEffect(() => {
-    fetchMenuItems();
-  }, [selectedCategory]);
+  const handleOrder = async (item) => {
+    if (!userId) {
+      Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
+      return;
+    }
 
-  const handleOrder = (item) => {
-    setOrderedItems([...orderedItems, item]);
-    Alert.alert('สั่งอาหารสำเร็จ', `${item.name} ถูกเพิ่มในรายการสั่งแล้ว`);
+    try {
+      await axios.post(`${API_BASE_URL}/api/user`, {
+        userId:"67e65a65a375bc6858d2b880",
+        foodId: item._id,
+        quantity: 1,
+      });
+      Alert.alert('สั่งอาหารสำเร็จ', `${item.name} ถูกเพิ่มในรายการสั่งแล้ว`);
+    } catch (err) {
+      Alert.alert("Error", "ไม่สามารถสั่งอาหารได้ กรุณาลองใหม่");
+    }
   };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading menu...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
-          style={styles.retryButton}
-          onPress={fetchMenuItems}
-        >
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput 
-          style={styles.searchInput} 
-          placeholder="Search..."
-          onChangeText={(text) => {
-            // สามารถเพิ่มฟังก์ชันค้นหาได้ที่นี่
-          }}
-        />
-        <Ionicons name="search" size={20} color="black" style={styles.searchIcon} />
-      </View>
-
-      {/* Category Tabs */}
       <View style={styles.categoryContainer}>
         {categories.map((category) => (
           <TouchableOpacity
@@ -102,117 +68,50 @@ const OrderScreen = ({ navigation }) => {
         ))}
       </View>
 
-      {/* Menu Items List */}
-      <FlatList
-        data={menuItems}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <View style={styles.menuItem}>
-            <Text style={styles.menuName}>{item.name}</Text>
-            <Text style={styles.menuPrice}>{item.price} บาท</Text>
-            <Text style={styles.menuStatus}>
-              สถานะ: {item.isAvalible === "Avalible" ? "มีในสต็อก" : "หมด"}
-            </Text>
-            <TouchableOpacity 
-              style={[
-                styles.orderButton, 
-                item.isAvalible !== "Avalible" && styles.orderButtonDisabled
-              ]} 
-              onPress={() => handleOrder(item)}
-              disabled={item.isAvalible !== "Avalible"}
-            >
-              <Text style={styles.orderButtonText}>
-                {item.isAvalible === "Avalible" ? "สั่ง" : "หมด"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
-
-      {/* Floating Action Button */}
-      <TouchableOpacity 
-        style={styles.floatingButton} 
-        onPress={() => navigation.navigate('OrderList', { orderedItems })}
-      >
-        <Ionicons name="restaurant-outline" size={30} color="black" />
-        {orderedItems.length > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{orderedItems.length}</Text>
-          </View>
-        )}
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <FlatList
+          data={menuItems}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <View style={styles.menuItem}>
+              <Text style={styles.menuName}>{item.name}</Text>
+              <Text style={styles.menuPrice}>{item.price} บาท</Text>
+              <TouchableOpacity 
+                style={[styles.orderButton, item.isAvalible !== "Avalible" && styles.orderButtonDisabled]} 
+                onPress={() => handleOrder(item)}
+                disabled={item.isAvalible !== "Avalible"}
+              >
+                <Text style={styles.orderButtonText}>{item.isAvalible === "Avalible" ? "สั่ง" : "หมด"}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
+      
+      <TouchableOpacity style={styles.viewOrderButton} onPress={() => navigation.navigate("OrderList")}> 
+        <Text style={styles.viewOrderText}>ดูรายการสั่งซื้อ</Text>
       </TouchableOpacity>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-          <Ionicons name="home" size={30} color="black" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('BookingOptions')}>
-          <Ionicons name="fast-food" size={30} color="black" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
-          <Ionicons name="cart" size={30} color="black" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person" size={30} color="black" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // ... สไตล์เดิมทั้งหมด ...
-
-  // เพิ่มสไตล์ใหม่
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FAF0E6',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FAF0E6',
-  },
-  errorText: {
-    color: 'red',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: '#0000FF',
-    padding: 10,
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: 'white',
-  },
-  menuStatus: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-  },
-  orderButtonDisabled: {
-    backgroundColor: '#CCCCCC',
-  },
-  badge: {
-    position: 'absolute',
-    right: -5,
-    top: -5,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, padding: 10 },
+  categoryContainer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10 },
+  categoryButton: { padding: 10, marginHorizontal: 5, backgroundColor: '#ddd', borderRadius: 5 },
+  categorySelected: { backgroundColor: '#0000FF' },
+  categoryText: { color: '#000' },
+  categoryTextSelected: { color: '#FFF' },
+  menuItem: { padding: 10, borderBottomWidth: 1, borderColor: '#ddd' },
+  menuName: { fontSize: 18, fontWeight: 'bold' },
+  menuPrice: { fontSize: 16, color: '#444' },
+  orderButton: { marginTop: 10, padding: 10, backgroundColor: '#28a745', borderRadius: 5, alignItems: 'center' },
+  orderButtonDisabled: { backgroundColor: '#ccc' },
+  orderButtonText: { color: '#fff', fontWeight: 'bold' },
+  viewOrderButton: { marginTop: 20, padding: 10, backgroundColor: '#007bff', borderRadius: 5, alignItems: 'center' },
+  viewOrderText: { color: '#fff', fontWeight: 'bold' },
 });
 
 export default OrderScreen;
