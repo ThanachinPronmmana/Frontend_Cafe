@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const RegisterScreen = ({ navigation }) => {
@@ -8,22 +7,6 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-
-  // ✅ ตรวจสอบว่ามี Token หรือไม่ ถ้ามีให้ไปหน้า Home
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        console.log("Token in AsyncStorage:", token);
-        if (token) {
-          navigation.replace('Home'); // ไปหน้า Home อัตโนมัติ
-        }
-      } catch (error) {
-        console.error("Error fetching token:", error);
-      }
-    };
-    checkLoginStatus();
-  }, []);
 
   // ✅ ฟังก์ชันสมัครสมาชิก
   const handleRegister = async () => {
@@ -42,18 +25,17 @@ const RegisterScreen = ({ navigation }) => {
         phone,
       });
 
-      console.log("API Response:", response.data);
+      console.log("API Response:", response.data); // ดูข้อมูลที่ตอบกลับมาจาก API
 
-      if (response.status === 200 && response.data.token) {
-        await AsyncStorage.setItem('token', response.data.token);
+      if (response.status === 200) {
         Alert.alert("Success", "สมัครสมาชิกสำเร็จ!");
-        navigation.replace('Login'); // ไปหน้า Home
+        navigation.replace('Login'); // ไปหน้า Login หลังจากสมัครสำเร็จ
       } else {
         Alert.alert("Register Failed", response.data.message || "No token received");
       }
     } catch (error) {
       console.error("Register Error:", error);
-      Alert.alert("Network Error", error.message);
+      Alert.alert("Network Error", error.message || "กรุณาลองใหม่");
     }
   };
 

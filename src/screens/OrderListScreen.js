@@ -21,11 +21,13 @@ const OrderListScreen = ({ navigation }) => {
   const loadUserId = async () => {
     try {
       const storageUserId = await AsyncStorage.getItem("userId");
-      console.log("📌 Loaded userId:", storageUserId);
+      console.log("📌 Loaded userId:", storageUserId); // ตรวจสอบว่า userId ถูกโหลดมาจาก AsyncStorage หรือไม่
 
       if (storageUserId) {
         setUserId(storageUserId);
         fetchOrders(storageUserId);
+      } else {
+        Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
       }
     } catch (err) {
       console.error("❌ Error loading userId", err);

@@ -32,7 +32,7 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('user'); // ลบ user ออกจาก AsyncStorage
+      await AsyncStorage.removeItem('user'); // ลบ user ออกจาก AsyncStorage; // ลบ token ออกจาก AsyncStorage
       navigation.replace('Login'); // กลับไปหน้า Login
     } catch (error) {
       console.error('Logout failed:', error);
