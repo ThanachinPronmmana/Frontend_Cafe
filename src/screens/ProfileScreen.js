@@ -48,7 +48,7 @@ const ProfileScreen = ({ navigation }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Log out</Text>
         <TouchableOpacity onPress={handleLogout}>
           <Ionicons name="log-out" size={30} color="white" />
         </TouchableOpacity>

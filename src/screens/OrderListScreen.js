@@ -1,101 +1,103 @@
 import React, { useState, useEffect } from "react";
 import { 
   View, Text, FlatList, TouchableOpacity, StyleSheet, 
-  ActivityIndicator, Alert 
+  ActivityIndicator, Alert, Modal, Image 
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://10.0.2.2:8000/api"; // แก้ให้ตรงกับ Backend
+const API_BASE_URL = "http://10.0.2.2:8000/api"; // เปลี่ยนเป็น URL ของคุณ
 
 const OrderListScreen = ({ navigation }) => {
-  const [food, setFood] = useState([]); // ใช้ state food สำหรับเก็บข้อมูลอาหาร
+  const [food, setFood] = useState([]);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState("");
-  const [cartTotal, setCartTotal] = useState(0); // สำหรับเก็บราคาสินค้ารวมจาก API
-  
+  const [cartTotal, setCartTotal] = useState(0);
+  const [showQR, setShowQR] = useState(false);
+  // const [cartId,setCartId] = useState("")
+  // const [reservationId,setreservationId] = useState("")
+
   useEffect(() => {
     loadUserId();
-  }, []);
+    
+  }, []); // เรียกใช้แค่ครั้งแรกที่โหลด component
 
+  // ฟังก์ชันสำหรับรีเซ็ตรายการอาหาร
+  const resetCart = async () => {
+    try {
+      setLoading(true); // ตั้งค่าให้ loading เป็น true ก่อนทำการรีเซ็ต
+      const URL = `${API_BASE_URL}/user/${userId}`;
+      await axios.delete(URL);
+      setFood([]); // เคลียร์รายการอาหาร
+      setCartTotal(0); // รีเซ็ตยอดรวม
+      setLoading(false); // ปิดการโหลด
+    } catch (err) {
+      setLoading(false); // ปิดการโหลดหากเกิดข้อผิดพลาด
+      console.error("Error resetting cart:", err);
+      Alert.alert("Error", "ไม่สามารถรีเซ็ตรายการอาหารได้", err.message);
+    }
+  };
+
+  // ฟังก์ชันโหลดข้อมูลผู้ใช้จาก AsyncStorage
   const loadUserId = async () => {
     try {
       const storageUserId = await AsyncStorage.getItem("userId");
-
+      
       if (storageUserId) {
         setUserId(storageUserId);
         fetchOrders(storageUserId);
-        
-      } else {
+      }
+      else {
         Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
       }
     } catch (err) {
       console.error("❌ Error loading userId", err);
     }
   };
-  
 
+  // ฟังก์ชันดึงข้อมูลรายการอาหาร
   const fetchOrders = async (userId) => {
     if (!userId) return;
-
+    setLoading(true);  // เริ่มการโหลดข้อมูล
     try {
       const URL = `${API_BASE_URL}/user/${userId}`;
       const response = await axios.get(URL);
-
-      const { foods, cartTotal } = response.data; // ดึงข้อมูลจาก API
-      setFood(foods); // เก็บข้อมูลอาหารใน state food
-      setCartTotal(cartTotal); // เก็บราคารวมจาก API
+      const { foods, cartTotal } = response.data;
+      setFood(foods);
+      setCartTotal(cartTotal);
     } catch (err) {
       console.error("Error fetching orders:", err);
       Alert.alert("Error", "ไม่สามารถโหลดรายการอาหารได้", err.message);
+    } finally {
+      setLoading(false); // ปิดการโหลดหลังจากดึงข้อมูลเสร็จ
     }
   };
-
-  const handleSubmitOrder = async () => {
+  
+  const handleShowQR =  () => {
     
-    // if (food.length === 0) {
-    //   Alert.alert("Error", "ไม่มีอาหารในตะกร้า");
+    // if (!userId) {
+    //   Alert.alert("Error", "ข้อมูลไม่ครบถ้วน กรุณาลองใหม่");
     //   return;
     // }
-    // await
-
-    
-  
-    // const orderData = {
-    //   userId: userId,
-    //   cartId: cartId,
-    //   reservationId: reservationId,
-    //   order_status: "Unready",
-    // };
   
     // try {
-    //   const URL = `${API_BASE_URL}/order`; // API สำหรับบันทึกข้อมูล Order
-    //   const response = await axios.post(URL, orderData);
+    //   await axios.post(`${API_BASE_URL}/order`, {
+    //     userId: userId,
+    //     cartId: cartId,
+    //     reservationId: reservationId,
+    //     order_status: "Unready",
+    //   });
+      
   
-    //   if (response.data.message === "Order created successfully") {
-    //     Alert.alert("สำเร็จ", "คำสั่งซื้อของคุณได้ถูกบันทึกแล้ว");
-    //     // เพิ่มฟังก์ชันที่คุณต้องการให้เกิดขึ้นหลังจากการสั่งซื้อเสร็จ
-    //     navigation.navigate("Home"); // สามารถเปลี่ยนการนำทางไปที่หน้าจออื่นๆ
-    //   }
+      setShowQR(true); // แสดง QR Code เมื่อสำเร็จ
     // } catch (err) {
-    //   console.error("Error submitting order:", err);
-    //   Alert.alert("Error", "ไม่สามารถบันทึกคำสั่งซื้อได้", err.message);
+    //   console.error("❌ Error sending order:", err);
+    //   Alert.alert("Error", "ไม่สามารถบันทึกคำสั่งซื้อได้");
     // }
   };
   
-  const resetcart = async()=>{
-    try{
-      const URL = `${API_BASE_URL}/user/${userId}`;
-      
-      await axios.delete(URL)
-      setFood([])
-      setCartTotal(0)
-    }catch(err){
-      console.error("Error fetching reset:", err);
-    }
-
-  }
+    
   return (
     <View style={styles.container}>
       <Text style={styles.title}>📋 รายการอาหาร</Text>
@@ -120,25 +122,47 @@ const OrderListScreen = ({ navigation }) => {
               )}
             />
           )}
-
-          <View style={styles.summaryContainer}>
-            <Text style={styles.totalPrice}>ราคารวม: {cartTotal} บาท</Text>
-            <TouchableOpacity 
-              style={styles.checkoutButton} 
-              onPress={handleSubmitOrder} // เมื่อกดจะทำการส่งข้อมูลไปยัง API
-            >
-              <Text style={styles.checkoutText}>ชำระเงิน</Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity 
             style={styles.refreshButton} 
-            onPress={resetcart}
+            onPress={resetCart} // เรียกใช้ฟังก์ชันรีเซ็ต
           >
             <Text style={styles.refreshText}>🔄 ยกเลิกรายการทั้งหมด</Text>
           </TouchableOpacity>
         </>
       )}
+          
+      {/* ตรวจสอบการแสดงปุ่มชำระเงิน */}
+      {cartTotal > 0 && (
+        <View style={styles.summaryContainer}>
+          <Text style={styles.totalPrice}>ราคารวม: {cartTotal} บาท</Text>
+          <TouchableOpacity 
+            style={styles.checkoutButton} 
+            onPress={handleShowQR} 
+          >
+            <Text style={styles.checkoutText}>ชำระเงิน</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {/* Modal สำหรับ QR Code */}
+      <Modal visible={showQR} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={{ fontSize: 18, marginBottom: 10 }}>🔗 สแกนเพื่อชำระเงิน</Text>
+            <Image 
+              source={require("../../images/Rickrolling_QR_code.png")} // ใช้ไฟล์รูป QR ภายในโปรเจค
+              style={{ width: 200, height: 200 }} 
+              resizeMode="contain"
+            />
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={() => setShowQR(false)}
+            >
+              <Text style={{ color: "white", fontWeight: "bold" }}>ปิด</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -193,17 +217,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#545353",
   },
-  orderButton: {
-    backgroundColor: "#28a745",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  orderText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
   summaryContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -229,17 +242,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   refreshButton: {
-    backgroundColor: "#FFA500",
+    backgroundColor: "#CD853F", // สีพื้นหลังเหมือนปุ่มชำระเงิน
     paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
-    marginTop: 15,
-    alignItems: "center",
+    marginTop: 10, // เพิ่มระยะห่างจากปุ่มชำระเงิน
   },
   refreshText: {
     color: "#FFFFFF",
     fontWeight: "bold",
-    fontSize: 16,
+    textAlign: "center",
   },
+  
+  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  modalContent: { backgroundColor: "white", padding: 20, borderRadius: 10, alignItems: "center" },
+  closeButton: { marginTop: 15, backgroundColor: "#CD853F", padding: 10, borderRadius: 5 },
   bottomNav: {
     flexDirection: "row",
     justifyContent: "space-around",
