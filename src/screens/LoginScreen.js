@@ -10,25 +10,34 @@ const LoginScreen = ({ navigation }) => {
   // ฟังก์ชัน Login
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://10.0.2.2:8000/api/login', {
+      const response = await axios.post('http://10.0.2.2:8000/api/login', { // เปลี่ยน IP เครื่องคุณ
         email,
         password,
       });
-
+      
+      
       // ตรวจสอบว่า response มีข้อมูลที่คาดหวังหรือไม่
-      if (response.data && response.data.user) {
-        const { user } = response.data;
-
-        // เก็บข้อมูลของผู้ใช้ใน AsyncStorage
-        await AsyncStorage.setItem('userId', user.email);  // เก็บอีเมลของผู้ใช้
-        await AsyncStorage.setItem('userName', user.name);  // เก็บชื่อของผู้ใช้
-        await AsyncStorage.setItem('userPhone', user.phone);  // เก็บเบอร์โทรศัพท์ของผู้ใช้
-
-        // แจ้งเตือนผู้ใช้ว่า login สำเร็จ
-        Alert.alert('Login Successful', 'You have successfully logged in!');
-        navigation.replace('Home'); // ไปหน้า Home
+      if (response.data) {
+        // Alert.alert(response.data.user.userId)
+        const { user, message,userId } = response.data;
+        if(userId){
+          Alert.alert(userId)
+        }
+        
+        
+        if (user) {
+          // ถ้าการเข้าสู่ระบบสำเร็จ
+          console.log("user data: ", user);
+          await AsyncStorage.setItem('email', user.email);
+          await AsyncStorage.setItem('userId', user.userId);
+            // เก็บ email ของผู้ใช้ใน AsyncStorage เป็น string
+          navigation.replace('Home'); // ไปหน้า Home
+        } else {
+          // ถ้าการเข้าสู่ระบบล้มเหลว
+          Alert.alert('Login Failed', message || 'Unknown error');
+        }
       } else {
-        Alert.alert('Login Failed', 'Invalid email or password');
+        Alert.alert('Error', 'No data received from the server');
       }
     } catch (error) {
       console.error('Login Error:', error);
@@ -45,7 +54,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-
+      
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -59,7 +68,7 @@ const LoginScreen = ({ navigation }) => {
         onChangeText={setPassword}
         secureTextEntry
       />
-
+      
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>

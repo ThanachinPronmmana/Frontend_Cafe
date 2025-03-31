@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Image, FlatList, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const HomeScreen = ({ navigation }) => {
@@ -8,34 +8,40 @@ const HomeScreen = ({ navigation }) => {
     { id: 2, name: 'คุกกี้', price: '50 บาท', image: 'https://static01.nyt.com/images/2022/02/12/dining/JT-Chocolate-Chip-Cookies/JT-Chocolate-Chip-Cookies-jumbo.jpg?quality=75&auto=webp' },
     { id: 3, name: 'แพนเค้ก', price: '45 บาท', image: 'https://mojo.generalmills.com/api/public/content/Pw6SBIgi-Ee6pTZBpU1oBg_webp_base.webp?v=4dec1972&t=191ddcab8d1c415fa10fa00a14351227'  },
     { id: 4, name: 'กะเพราหมูสับ', price: '150 บาท', image: 'https://s359.kapook.com/pagebuilder/3132fac8-2481-477d-8f83-54af38ccb434.jpg'  },
-    { id: 5, name: 'เมนู E', price: '90 บาท', image: './images/ข้าวไข่เจียวหมูสับ.jpg'  },
-    { id: 6, name: 'เมนู F', price: '150 บาท', image: './images/มัทฉะลาเต้.jpg'  },
-    { id: 7, name: 'เมนู G', price: '90 บาท', image: './images/เอสเปรโซ่.jpg'  },
-    { id: 8, name: 'เมนู H', price: '150 บาท', image: './images/ชาเย็น.jpg'  },
+    { id: 5, name: 'กะเพราหมูกรอบ', price: '60 บาท', image: 'https://img.kapook.com/u/2016/wanwanat/0_edit/385698979x.jpg'  },
+    { id: 6, name: 'มัทฉะลาเต้', price: '150 บาท', image: 'https://apimain.kleensstation.com/images/1695609968.jpg'  },
+    { id: 7, name: 'เอสเปรโซ่', price: '90 บาท', image: 'https://santipanich.com/wp-content/uploads/2021/05/closeup-classic-fresh-espresso-served-dark-surface.jpg'  },
+    { id: 8, name: 'เสาวรสโซดา', price: '150 บาท', image: 'https://img.wongnai.com/p/1600x0/2022/06/01/6305af0391ca474ab9c450b2cb33520b.jpg'  },
   ]);
 
   const [selectedMenu, setSelectedMenu] = useState(null);
 
   return (
     <View style={styles.container}>
-      {/* เมนูขายดีอันดับ 1 */}
-      <TouchableOpacity 
-        style={styles.bestSelling} 
-        onPress={() => setSelectedMenu({ name: 'เมนูขายดีอันดับ 1', price: '99 บาท', image: 'https://image.makewebeasy.net/makeweb/m_1920x0/aSAKumEHs/Tea/IG_HK_0025__4_.jpg?v=202405291424' })}
-      >
-        <Image source={{ uri: 'https://image.makewebeasy.net/makeweb/m_1920x0/aSAKumEHs/Tea/IG_HK_0025__4_.jpg?v=202405291424' }} style={styles.bestSellingImage} />
-        <Text style={styles.bestSellingText}>เมนูขายดีอันดับ 1</Text>
-      </TouchableOpacity>
+      {/* ScrollView สำหรับเนื้อหาทั้งหมด */}
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* เมนูขายดีอันดับ 1 */}
+        <TouchableOpacity 
+          style={styles.bestSelling} 
+          onPress={() => setSelectedMenu({ name: 'เมนูขายดีอันดับ 1', price: '99 บาท', image: 'https://image.makewebeasy.net/makeweb/m_1920x0/aSAKumEHs/Tea/IG_HK_0025__4_.jpg?v=202405291424' })}
+        >
+          <Image source={{ uri: 'https://image.makewebeasy.net/makeweb/m_1920x0/aSAKumEHs/Tea/IG_HK_0025__4_.jpg?v=202405291424' }} style={styles.bestSellingImage} />
+          <Text style={styles.bestSellingText}>เมนูขายดีอันดับ 1</Text>
+        </TouchableOpacity>
 
-      {/* เมนูแนะนำ */}
-      <View style={styles.menuGrid}>
-        {menus.map((menu) => (
-          <TouchableOpacity key={menu.id} style={styles.menuItem} onPress={() => setSelectedMenu(menu)}>
-            <Image source={{ uri: menu.image }} style={styles.menuImage} />
-            <Text style={styles.menuText}>{menu.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        {/* เมนูแนะนำ */}
+        <FlatList
+          data={menus}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2} // ให้แสดงเมนู 2 คอลัมน์
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.menuItem} onPress={() => setSelectedMenu(item)}>
+              <Image source={{ uri: item.image }} style={styles.menuImage} />
+              <Text style={styles.menuText}>{item.name}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </ScrollView>
 
       {/* Popup รายละเอียดเมนู */}
       <Modal transparent visible={!!selectedMenu} animationType="fade">
@@ -74,6 +80,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF0E6',
     alignItems: 'center',
   },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingBottom: 60, // เพิ่มพื้นที่ด้านล่างให้เลื่อนได้สะดวกขึ้น
+  },
   bestSelling: {
     width: '90%',
     height: 200,
@@ -98,12 +109,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 10,
     borderRadius: 5,
-  },
-  menuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    width: '100%',
   },
   menuItem: {
     width: '40%',

@@ -1,38 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
+const API_BASE_URL = "http://10.0.2.2:8000"
 const ProfileScreen = ({ navigation }) => {
-  const [profile, setProfile] = useState(null);
-
+  const [profile, setProfile] = useState([]);
+  
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // ดึง user_id จาก AsyncStorage
-        const userData = await AsyncStorage.getItem('user');
+        
+        const userData = await AsyncStorage.getItem('userId');
+  
         if (userData) {
-          const { _id } = JSON.parse(userData); // ได้ user_id
-          console.log("User ID:", _id);
+          // ใช้ userData เป็น _id
+          const URL = `${API_BASE_URL}/api/profile/${userData}`;
+  
+          // เรียก API
+          const response = await axios.get(URL);
 
-          // ใช้ axios เรียก API
-          const response = await axios.get(`http://10.0.2.2:8000/api/user/${_id}`);
           
+        
+  
           // อัปเดต state ของ profile
           setProfile(response.data);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
+        Alert.alert('Error', 'ไม่สามารถดึงข้อมูลโปรไฟล์ได้');
       }
     };
-
+  
     fetchProfile();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('user'); // ลบ user ออกจาก AsyncStorage; // ลบ token ออกจาก AsyncStorage
+      await AsyncStorage.removeItem('userId'); // ลบ user ออกจาก AsyncStorage; // ลบ token ออกจาก AsyncStorage
       navigation.replace('Login'); // กลับไปหน้า Login
     } catch (error) {
       console.error('Logout failed:', error);
@@ -56,9 +61,9 @@ const ProfileScreen = ({ navigation }) => {
         ) : (
           <View style={styles.profileImagePlaceholder} />
         )}
-        <Text style={styles.profileName}>{profile?.name || 'Guest User'}</Text>
-        <Text style={styles.profileEmail}>{profile?.email || 'No Email'}</Text>
-        <Text style={styles.profilePhone}>{profile?.phone || 'No Phone'}</Text>
+        <Text style={styles.profileName}>Name:{profile?.name || 'Guest User'}</Text>
+        <Text style={styles.profileEmail}>Email:{profile?.email || 'No Email'}</Text>
+        <Text style={styles.profilePhone}>Phone:{profile?.phone || 'No Phone'}</Text>
       </View>
 
       {/* Bottom Navigation */}

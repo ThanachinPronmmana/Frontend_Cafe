@@ -6,39 +6,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_BASE_URL = 'http://10.0.2.2:8000';
 
 const OrderScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState('Food'); // กำหนดหมวดหมู่เริ่มต้นเป็น 'Food'
+  const [selectedCategory, setSelectedCategory] = useState('Food');
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [userId, setUserId] = useState(null); // เก็บ userId สำหรับการสั่งอาหาร
+  const [userId, setUserId] = useState(""); // ✅ เพิ่ม state เก็บ userId
 
-  const categories = ['Desert', 'Food', 'Drinks']; // รายการหมวดหมู่
+  const categories = ['Desert', 'Food', 'Drinks'];
 
   useEffect(() => {
-    loadUserId(); // ดึง userId จาก AsyncStorage
-    fetchMenuItems(); // ดึงเมนูตามหมวดหมู่ที่เลือก
-  }, [selectedCategory]); // ใช้ selectedCategory ในการดึงข้อมูลเมื่อหมวดหมู่เปลี่ยน
-
-  const loadUserId = async () => {
-    try {
-      const storedUserId = await AsyncStorage.getItem("userId");
-      if (storedUserId) {
-        setUserId(storedUserId);
-      } else {
-        Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอิน");
-      }
-    } catch (error) {
-      console.error("Error loading userId:", error);
-      Alert.alert("Error", "ไม่สามารถโหลดข้อมูลผู้ใช้");
-    }
-  };
+    fetchMenuItems(); // ✅ แก้ชื่อฟังก์ชัน
+  }, [selectedCategory]);
 
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axios.get(`${API_BASE_URL}/api/food/${selectedCategory}`);
-      setMenuItems(response.data.foods || []); // ดึงข้อมูลอาหารจาก API
+      setMenuItems(response.data.foods || response.data.data || []);
     } catch (err) {
       setError("โหลดเมนูไม่สำเร็จ กรุณาลองใหม่!");
       Alert.alert("Error", "ไม่สามารถโหลดเมนูได้ กรุณาลองใหม่");
@@ -47,35 +32,34 @@ const OrderScreen = ({ navigation }) => {
     }
   };
 
+  useEffect(() => {
+    const getUserId = async () => {
+      const storedUserId = await AsyncStorage.getItem("userId");
+      setUserId(storedUserId);
+    };
+    getUserId();
+  }, []);
+
   const handleOrder = async (item) => {
     if (!userId) {
       Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
       return;
     }
-  
+
     try {
-      // เพิ่มการตรวจสอบข้อมูลก่อนส่ง
-      console.log("Sending order with userId:", userId, "foodId:", item._id);
-  
-      const response = await axios.post(`${API_BASE_URL}/api/user`, {
-        userId: userId,
+      
+      await axios.post(`${API_BASE_URL}/api/user`, {
+        userId:String(userId), // ✅ ส่ง userId ที่ถูกต้อง
         foodId: item._id,
         quantity: 1,
-      });
-  
-      console.log("Order response:", response.data); // ตรวจสอบผลลัพธ์ของการตอบกลับจาก API
-  
-      if (response.status === 200) {
-        Alert.alert('สั่งอาหารสำเร็จ', `${item.name} ถูกเพิ่มในรายการสั่งแล้ว`);
-      } else {
-        Alert.alert("Error", "ไม่สามารถสั่งอาหารได้ กรุณาลองใหม่1");
-      }
+      }); 
+      Alert.alert('สั่งอาหารสำเร็จ', `${item.name} ถูกเพิ่มในรายการสั่งแล้ว`);
+      navigation.navigate("OrderList", { refresh: true }); // ✅ บอกให้โหลดข้อมูลใหม่
     } catch (err) {
-      console.log("Error during order:", err); // เพิ่มการตรวจสอบข้อผิดพลาด
-      Alert.alert("Error", "ไม่สามารถสั่งอาหารได้ กรุณาลองใหม่2");
+      Alert.alert("Error", "ไม่สามารถสั่งอาหารได้ กรุณาลองใหม่",userId);
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.categoryContainer}>
@@ -83,7 +67,7 @@ const OrderScreen = ({ navigation }) => {
           <TouchableOpacity
             key={category}
             style={[styles.categoryButton, selectedCategory === category && styles.categorySelected]}
-            onPress={() => setSelectedCategory(category)} // เลือกหมวดหมู่ที่ต้องการ
+            onPress={() => setSelectedCategory(category)}
           >
             <Text style={[styles.categoryText, selectedCategory === category && styles.categoryTextSelected]}>
               {category}
@@ -114,7 +98,7 @@ const OrderScreen = ({ navigation }) => {
         />
       )}
 
-      <TouchableOpacity style={styles.viewOrderButton} onPress={() => navigation.navigate("OrderList")}>
+      <TouchableOpacity style={styles.viewOrderButton} onPress={() => navigation.navigate("OrderList")}> 
         <Text style={styles.viewOrderText}>ดูรายการสั่งซื้อ</Text>
       </TouchableOpacity>
     </View>
