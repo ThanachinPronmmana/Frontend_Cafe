@@ -41,7 +41,7 @@ const ProfileScreen = ({ navigation }) => {
       navigation.replace('Login'); // กลับไปหน้า Login
     } catch (error) {
       console.error('Logout failed:', error);
-    }
+    }     
   };
 
   return (

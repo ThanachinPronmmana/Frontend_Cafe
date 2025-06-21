@@ -15,6 +15,8 @@ const OrderListScreen = ({ navigation }) => {
   const [userId, setUserId] = useState("");
   const [cartTotal, setCartTotal] = useState(0);
   const [showQR, setShowQR] = useState(false);
+  const [cartId,setCartId] = useState()
+  const [tableId,setTableId] = useState()
   // const [cartId,setCartId] = useState("")
   // const [reservationId,setreservationId] = useState("")
 
@@ -63,9 +65,12 @@ const OrderListScreen = ({ navigation }) => {
     try {
       const URL = `${API_BASE_URL}/user/${userId}`;
       const response = await axios.get(URL);
-      const { foods, cartTotal } = response.data;
+      const { foods, cartTotal,cartId,tableId } = response.data;
       setFood(foods);
       setCartTotal(cartTotal);
+      setCartId(cartId)
+      setTableId(tableId)
+      
     } catch (err) {
       console.error("Error fetching orders:", err);
       Alert.alert("Error", "ไม่สามารถโหลดรายการอาหารได้", err.message);
@@ -74,27 +79,19 @@ const OrderListScreen = ({ navigation }) => {
     }
   };
   
-  const handleShowQR =  () => {
-    
-    // if (!userId) {
-    //   Alert.alert("Error", "ข้อมูลไม่ครบถ้วน กรุณาลองใหม่");
-    //   return;
-    // }
+  const handleShowQR =  async() => {
   
-    // try {
-    //   await axios.post(`${API_BASE_URL}/order`, {
-    //     userId: userId,
-    //     cartId: cartId,
-    //     reservationId: reservationId,
-    //     order_status: "Unready",
-    //   });
-      
-  
-      setShowQR(true); // แสดง QR Code เมื่อสำเร็จ
-    // } catch (err) {
-    //   console.error("❌ Error sending order:", err);
-    //   Alert.alert("Error", "ไม่สามารถบันทึกคำสั่งซื้อได้");
-    // }
+    try{
+      await axios.post(`${API_BASE_URL}/order`,{
+        userId: userId,
+        cartId: cartId,
+        reservationId:tableId,
+        order_status: "Unready",
+      })
+      setShowQR(true)
+    }catch(err){
+      Alert.alert("Error","Can't save",err)
+    }
   };
   
     

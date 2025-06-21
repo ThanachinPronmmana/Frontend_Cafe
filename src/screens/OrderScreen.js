@@ -15,6 +15,7 @@ const OrderScreen = ({ navigation }) => {
   const categories = ['Desert', 'Food', 'Drinks'];
 
   useEffect(() => {
+    getUserId()
     fetchMenuItems(); // ✅ แก้ชื่อฟังก์ชัน
   }, [selectedCategory]);
 
@@ -32,13 +33,12 @@ const OrderScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
+  
     const getUserId = async () => {
       const storedUserId = await AsyncStorage.getItem("userId");
       setUserId(storedUserId);
     };
-    getUserId();
-  }, []);
+  
 
   const handleOrder = async (item) => {
     if (!userId) {
