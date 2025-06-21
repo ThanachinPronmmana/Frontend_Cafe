@@ -7,10 +7,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-
-const getBaseURL = () => {
-  return Platform.OS === 'android' ? 'http://10.0.2.2:8000/api' : 'http://localhost:8000/api';
-};
+const API_BASE_URL = "http://10.0.2.2:8000"
 
 const BookingScreen = ({ navigation }) => {
   const [selectedTime, setSelectedTime] = useState('');
@@ -19,25 +16,20 @@ const BookingScreen = ({ navigation }) => {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [userId, setUserId] = useState();
   const [errorMessage, setErrorMessage] = useState('');
 
-  const api = axios.create({
-    baseURL: getBaseURL(),
-    timeout: 10000,
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
-  });
 
   const fetchUserData = async () => {
     try {
-      const storedUserId = await AsyncStorage.getItem('user_id');
-      const storedUserName = await AsyncStorage.getItem('user_name');
+      const storedUserId = await AsyncStorage.getItem('userId');
+      
+      if (storedUserId){
+        setUserId(storedUserId)
+      }else{
+        Alert.alert("Error")
+      }
 
-      if (storedUserId) setUserId(storedUserId);
-      if (storedUserName) setCustomerName(storedUserName);
     } catch (error) {
       console.error('Error fetching user data:', error);
     }
@@ -45,14 +37,10 @@ const BookingScreen = ({ navigation }) => {
 
   const fetchTables = async () => {
     setLoading(true);
-    setErrorMessage('');
+    
     try {
-      const response = await api.get('/table');
-      if (Array.isArray(response.data)) {
-        setTables(response.data);
-      } else {
-        throw new Error('Invalid data format');
-      }
+      const response = await axios.get(`${API_BASE_URL}/api/table`)
+      setTables(response.data.tables || [] )
     } catch (error) {
       console.error('Error fetching tables:', error);
       setErrorMessage('ไม่สามารถโหลดรายการโต๊ะได้ กรุณาลองใหม่');
@@ -74,14 +62,14 @@ const BookingScreen = ({ navigation }) => {
 
     try {
       setBookingLoading(true);
-      const bookingData = {
-        user_name: customerName,
-        table_id: selectedTable,
-        reservation_time: selectedTime,
-        user_id: userId, 
-      };
+      // const bookingData = {
+      //   user_name: customerName,
+      //   table_id: selectedTable,
+      //   reservation_time: selectedTime,
+      //   user_id: userId, 
+      // };
 
-      const response = await api.post('/reservations', bookingData);
+      // const response = await api.post('/reservations', bookingData);
 
       Alert.alert('จองสำเร็จ', 'การจองของคุณได้รับการยืนยัน', [
         { 
@@ -116,8 +104,12 @@ const BookingScreen = ({ navigation }) => {
           ) : (
             <Picker selectedValue={selectedTable} onValueChange={setSelectedTable} style={styles.picker}>
               <Picker.Item label="เลือกโต๊ะ" value="" />
-              {tables.map(table => (
-                <Picker.Item key={table._id} label={`โต๊ะ ${table.number}`} value={table._id} />
+              {tables.map((table) => (
+                <Picker.Item 
+                key={table._id} 
+                label={`โต๊ะ ${table.number}`}
+                value={table._id} 
+                />
               ))}
             </Picker>
           )}

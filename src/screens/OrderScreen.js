@@ -10,15 +10,14 @@ const OrderScreen = ({ navigation }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [userId, setUserId] = useState("token"); // ✅ เพิ่ม state เก็บ userId
+  const [userId, setUserId] = useState(""); // ✅ เพิ่ม state เก็บ userId
 
   const categories = ['Desert', 'Food', 'Drinks'];
 
   useEffect(() => {
+    getUserId()
     fetchMenuItems(); // ✅ แก้ชื่อฟังก์ชัน
   }, [selectedCategory]);
-
-  
 
   const fetchMenuItems = async () => {
     try {
@@ -34,6 +33,13 @@ const OrderScreen = ({ navigation }) => {
     }
   };
 
+  
+    const getUserId = async () => {
+      const storedUserId = await AsyncStorage.getItem("userId");
+      setUserId(storedUserId);
+    };
+  
+
   const handleOrder = async (item) => {
     if (!userId) {
       Alert.alert("Error", "ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่");
@@ -41,14 +47,16 @@ const OrderScreen = ({ navigation }) => {
     }
 
     try {
+      
       await axios.post(`${API_BASE_URL}/api/user`, {
-        userId:"67e65a65a375bc6858d2b880",
+        userId:String(userId), // ✅ ส่ง userId ที่ถูกต้อง
         foodId: item._id,
         quantity: 1,
-      });
+      }); 
       Alert.alert('สั่งอาหารสำเร็จ', `${item.name} ถูกเพิ่มในรายการสั่งแล้ว`);
+      navigation.navigate("OrderList", { refresh: true }); // ✅ บอกให้โหลดข้อมูลใหม่
     } catch (err) {
-      Alert.alert("Error", "ไม่สามารถสั่งอาหารได้ กรุณาลองใหม่");
+      Alert.alert("Error", "ไม่สามารถสั่งอาหารได้ กรุณาลองใหม่",userId);
     }
   };
 
@@ -89,7 +97,7 @@ const OrderScreen = ({ navigation }) => {
           )}
         />
       )}
-      
+
       <TouchableOpacity style={styles.viewOrderButton} onPress={() => navigation.navigate("OrderList")}> 
         <Text style={styles.viewOrderText}>ดูรายการสั่งซื้อ</Text>
       </TouchableOpacity>
